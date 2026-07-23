@@ -132,7 +132,7 @@ async function registerStudent(req, res) {
 
     return res.status(500).json({
       success: false,
-      message: 'Something went wrong while registering. Please try again.'
+      message: `Registration error: ${err.message || 'Something went wrong while registering.'}`
     });
   }
 }

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Yaazhlan Dance Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Cinzel:wght@600;700&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .dash-wrap{ max-width:720px; margin:0 auto; padding:80px 24px; position:relative; z-index:2; }
+  .dash-card{ text-align:center; }
+  .dash-card h2{ margin-bottom:6px; }
+  .dash-info{
+    margin-top:28px; text-align:left; display:grid; grid-template-columns:1fr 1fr; gap:16px 24px;
+    font-size:14px;
+  }
+  .dash-info div span.k{ display:block; color:var(--coral); font-size:11px; letter-spacing:.1em; text-transform:uppercase; margin-bottom:4px; }
+  .dash-info div span.v{ color:var(--ivory); }
+  #logoutBtn{ margin-top:34px; }
+</style>
+</head>
+<body>
+
+<div id="particle-field"></div>
+<div class="veil"></div>
+
+<div class="dash-wrap">
+  <header style="padding:0 0 40px;">
+    <div class="studio-name" style="font-size:26px;">Yaazhlan Dance Studio</div>
+    <div class="tagline">Move &nbsp;·&nbsp; Express &nbsp;·&nbsp; Inspire</div>
+  </header>
+
+  <section class="panel dash-card">
+    <div class="panel-head">
+      <div class="kicker">Student Dashboard</div>
+      <h2 id="welcomeHeading">Welcome back!</h2>
+      <p id="welcomeSub">Here's what's on file for your account.</p>
+      <div class="rule"></div>
+    </div>
+
+    <div id="dashBanner" class="banner"></div>
+    <div class="dash-info" id="dashInfo"></div>
+
+    <button class="btn btn-secondary" id="logoutBtn">Logout</button>
+  </section>
+</div>
+
+<script src="config.js"></script>
+<script src="script.js"></script>
+<script>
+  // ============================================================
+  //  Dashboard logic — reads the JWT stored at login, fetches
+  //  the student's own record from GET /api/students/:id, and
+  //  provides a logout action.
+  // ============================================================
+  (function () {
+    const token = localStorage.getItem('yaazhlan_token') || sessionStorage.getItem('yaazhlan_token');
+    const studentRaw = localStorage.getItem('yaazhlan_student') || sessionStorage.getItem('yaazhlan_student');
+
+    const dashBanner = document.getElementById('dashBanner');
+    const dashInfo = document.getElementById('dashInfo');
+
+    if (!token || !studentRaw) {
+      window.location.href = 'index.html';
+      return;
+    }
+
+    const student = JSON.parse(studentRaw);
+    document.getElementById('welcomeHeading').textContent = `Welcome, ${student.fullName}!`;
+
+    fetch(`${API_BASE_URL}/students/${student.studentId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.message || 'Could not load your details.');
+        return data.data;
+      })
+      .then((s) => {
+        dashInfo.innerHTML = `
+          <div><span class="k">Course</span><span class="v">${s.course || '—'}</span></div>
+          <div><span class="k">Batch</span><span class="v">${s.batch || '—'}</span></div>
+          <div><span class="k">Experience</span><span class="v">${s.experience || '—'}</span></div>
+          <div><span class="k">Phone</span><span class="v">${s.phone || '—'}</span></div>
+          <div><span class="k">Email</span><span class="v">${s.email || '—'}</span></div>
+          <div><span class="k">Joining Date</span><span class="v">${s.joining_date || '—'}</span></div>
+        `;
+      })
+      .catch((err) => {
+        dashBanner.textContent = `❌ ${err.message}`;
+        dashBanner.className = 'banner show error';
+      });
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      localStorage.removeItem('yaazhlan_token');
+      localStorage.removeItem('yaazhlan_student');
+      sessionStorage.removeItem('yaazhlan_token');
+      sessionStorage.removeItem('yaazhlan_student');
+      window.location.href = 'index.html';
+    });
+  })();
+</script>
+</body>
+</html>

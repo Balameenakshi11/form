@@ -7,11 +7,18 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
-const connectionString = process.env.DATABASE_URL || process.env.MYSQL_URL || process.env.MYSQLPRIVATEURL;
+const connectionString =
+  process.env.DATABASE_URL ||
+  process.env.MYSQL_URL ||
+  process.env.MYSQLPRIVATEURL ||
+  process.env.MYSQL_PRIVATE_URL ||
+  process.env.MYSQL_PUBLIC_URL ||
+  process.env.MYSQLPUBLICURL;
 
 let pool;
 
 if (connectionString) {
+  console.log('🔗 Connecting to MySQL using connection URL...');
   pool = mysql.createPool({
     uri: connectionString,
     waitForConnections: true,
@@ -20,12 +27,22 @@ if (connectionString) {
     dateStrings: true
   });
 } else {
+  const host = process.env.MYSQLHOST || process.env.MYSQLPRIVATEHOST || process.env.MYSQL_HOST || process.env.DB_HOST || 'localhost';
+  const user = process.env.MYSQLUSER || process.env.MYSQL_USER || process.env.DB_USER || 'root';
+  const password = process.env.MYSQLPASSWORD || process.env.MYSQL_PASSWORD || process.env.DB_PASSWORD || '';
+  const database = process.env.MYSQLDATABASE || process.env.MYSQL_DATABASE || process.env.DB_NAME || 'yaazhlan_dance_studio';
+  const port = Number(process.env.MYSQLPORT || process.env.MYSQL_PORT || process.env.DB_PORT || 3306);
+
+  if (host === 'localhost' && (process.env.RAILWAY_STATIC_URL || process.env.RAILWAY_ENVIRONMENT || process.env.PORT)) {
+    console.warn('⚠️ Warning: Running on Railway but MYSQLHOST / DATABASE_URL is not set in Railway service variables.');
+  }
+
   pool = mysql.createPool({
-    host: process.env.MYSQLHOST || process.env.MYSQL_HOST || process.env.DB_HOST || 'localhost',
-    user: process.env.MYSQLUSER || process.env.MYSQL_USER || process.env.DB_USER || 'root',
-    password: process.env.MYSQLPASSWORD || process.env.MYSQL_PASSWORD || process.env.DB_PASSWORD || '',
-    database: process.env.MYSQLDATABASE || process.env.MYSQL_DATABASE || process.env.DB_NAME || 'yaazhlan_dance_studio',
-    port: Number(process.env.MYSQLPORT || process.env.MYSQL_PORT || process.env.DB_PORT || 3306),
+    host,
+    user,
+    password,
+    database,
+    port,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
